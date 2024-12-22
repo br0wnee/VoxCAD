@@ -5,7 +5,9 @@ import math
 from enum import IntEnum
 
 # resolution
-WIN_RES = glm.vec2(1600, 900)
+WIN_HEIGHT = 900
+WIN_WIDTH = 1600
+WIN_RES = glm.vec2(WIN_WIDTH, WIN_HEIGHT)
 
 # chunk
 CHUNK_SIZE = 32
@@ -24,7 +26,7 @@ PITCH_MAX = glm.radians(89)
 
 # workpiece
 
-WORKPIECE_W, WORKPIECE_H, WORKPIECE_D = 16 * 2, 4, 16 * 2
+WORKPIECE_W, WORKPIECE_H, WORKPIECE_D = 16, 4, 16
 WORKPIECE_AREA = WORKPIECE_W * WORKPIECE_D
 WORKPIECE_VOL = WORKPIECE_AREA * WORKPIECE_H
 

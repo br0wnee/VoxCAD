@@ -1,79 +1,80 @@
 from settings import *
 import moderngl as mgl
-import pygame as pg
 import sys
 from shader_program import ShaderProgram
 from scene import Scene
 from player import Player
 from textures import Textures
+from ui import UI
+import moderngl_window as mglw
+from moderngl_window import WindowConfig
 
 
-class VoxelEngine:
-    def __init__(self):
-        pg.init()
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(
-            pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE
-        )
-        pg.display.gl_set_attribute(pg.GL_DEPTH_SIZE, 24)
+from imgui_bundle import imgui
+from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
 
-        pg.display.set_mode(WIN_RES, flags=pg.OPENGL | pg.DOUBLEBUF, vsync=True)
-        self.ctx = mgl.create_context()
 
-        self.ctx.enable(flags=mgl.DEPTH_TEST | mgl.CULL_FACE | mgl.BLEND)
-        self.ctx.gc_mode = "auto"
+class VoxCAD(WindowConfig):
+    title = "VoxCAD"
+    window_size = (WIN_WIDTH, WIN_HEIGHT)
+    resizable = False
+    cursor = False
 
-        self.clock = pg.time.Clock()
-        self.delta_time = 0
-        self.time = 0
+    vsync = False
+    gl_version = (4, 3)
 
-        pg.event.set_grab(True)
-        pg.mouse.set_visible(False)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-        self.is_running = True
-        self.on_init()
+        imgui.create_context()
+        self.wnd.ctx.error
+        self.imgui = ModernglWindowRenderer(self.wnd)
 
-    def on_init(self):
         self.textures = Textures(self)
         self.player = Player(self)
         self.shader_program = ShaderProgram(self)
         self.scene = Scene(self)
+        self.ui = UI(self)
+
+        self.delta_time = 0
+        self.time = 0
+
+        self.keys_pressed = {}
+        self.wnd.mouse_exclusivity = True
+
+        self.is_running = True
 
     def update(self):
         self.player.update()
         self.shader_program.update()
         self.scene.update()
 
-        self.delta_time = self.clock.tick()
-        self.time = pg.time.get_ticks() * 0.001
-        pg.display.set_caption(f"{self.clock.get_fps() :.0f}")
+        self.delta_time = self.timer._frames
 
-    def render(self):
+    def on_render(self, time: float, frametime: float):
+        self.ctx.enable(flags=mgl.DEPTH_TEST | mgl.CULL_FACE | mgl.BLEND)
+        self.ctx.gc_mode = "auto"
+
         self.ctx.clear(color=BG_COLOR)
+        self.update()
         self.scene.render()
-        pg.display.flip()
+        self.ui.render()
+        self.wnd.swap_buffers()
 
-    def handle_events(self):
-        for event in pg.event.get():
-            if event.type == pg.QUIT or (
-                event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE
-            ):
-                self.is_running = False
+    def on_key_event(self, key, action, modifiers):
+        keys = self.wnd.keys
 
-            self.player.handle_tool_control(event=event)
-            if self.player.controller_connected:
-                self.player.gamepad_movement_y(event=event)
+        if action == keys.ACTION_PRESS:
+            self.keys_pressed[key] = True
+        elif action == keys.ACTION_RELEASE:
+            self.keys_pressed[key] = False
 
-    def run(self):
-        while self.is_running:
-            self.handle_events()
-            self.update()
-            self.render()
-        pg.quit()
-        sys.exit()
+        self.player.keyboard_control(key, action, modifiers)
+        self.player.handle_tool_control(key, action, modifiers)
+
+    def on_mouse_position_event(self, x, y, dx, dy):
+        self.player.mouse_control(dx, dy)
 
 
 if __name__ == "__main__":
-    app = VoxelEngine()
-    app.run()
+    mglw.run_window_config(VoxCAD)

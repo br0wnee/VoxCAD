@@ -1,5 +1,6 @@
-import pygame as pg
 import moderngl as mgl
+from settings import *
+from PIL import Image
 
 
 class Textures:
@@ -14,14 +15,23 @@ class Textures:
         self.texture_0.use(location=0)
 
     def load(self, file_name):
-        texture = pg.image.load(f"assets/{file_name}")
-        texture = pg.transform.flip(texture, flip_x=True, flip_y=False)
+
+        try:
+            image = Image.open(f"assets/{file_name}")
+        except FileNotFoundError:
+            print(f"Image file not found: {file_name}")
+            return None
+
+        image = image.convert("RGBA")
+
+        image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
         texture = self.ctx.texture(
-            size=texture.get_size(),
+            size=image.size,
             components=4,
-            data=pg.image.tostring(texture, "RGBA", False),
+            data=image.tobytes(),
         )
+
         texture.anisotropy = 8.0
         texture.build_mipmaps()
         texture.filter = (mgl.LINEAR, mgl.LINEAR)
