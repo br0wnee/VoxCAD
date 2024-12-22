@@ -18,7 +18,7 @@ class VoxCAD(WindowConfig):
     title = "VoxCAD"
     window_size = (WIN_WIDTH, WIN_HEIGHT)
     resizable = False
-    cursor = False
+    cursor = True
 
     vsync = False
     gl_version = (4, 3)
@@ -69,11 +69,27 @@ class VoxCAD(WindowConfig):
         elif action == keys.ACTION_RELEASE:
             self.keys_pressed[key] = False
 
+        if action == keys.ACTION_PRESS:
+            if key == keys.C:
+                self.cursor = not self.cursor
+                self.wnd.mouse_exclusivity = not self.wnd.mouse_exclusivity
+        self.imgui.key_event(key, action, modifiers)
         self.player.keyboard_control(key, action, modifiers)
         self.player.handle_tool_control(key, action, modifiers)
 
     def on_mouse_position_event(self, x, y, dx, dy):
-        self.player.mouse_control(dx, dy)
+        self.imgui.mouse_position_event(x, y, dx, dy)
+        if self.wnd.mouse_exclusivity:
+            self.player.mouse_control(dx, dy)
+
+    def on_mouse_press_event(self, x, y, button):
+        self.imgui.mouse_press_event(x, y, button)
+
+    def on_mouse_drag_event(self, x, y, dx, dy):
+        self.imgui.mouse_drag_event(x, y, dx, dy)
+
+    def on_mouse_release_event(self, x, y, button):
+        self.imgui.mouse_release_event(x, y, button)
 
 
 if __name__ == "__main__":
