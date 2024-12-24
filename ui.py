@@ -19,7 +19,7 @@ class UI:
     def render(self):
         imgui.new_frame()
 
-        # self.information_windows()
+        self.information_windows()
         self.create_coordinate_system_widget()
 
         imgui.render()
@@ -30,10 +30,14 @@ class UI:
 
         imgui.begin("Diagnostic", True)
         imgui.text(f"FPS: {self.app.timer.fps_average}")
+        imgui.text(f"deltaTime: {self.app.delta_time}")
         imgui.end()
 
         imgui.begin("Tool", True)
         imgui.text(f"Position: {self.app.scene.world.tool_handler.tool.position}")
+        imgui.text(
+            f"Removing {self.app.scene.world.tool_handler.affected_voxels[0]} voxels"
+        )
         imgui.end()
 
     def create_coordinate_system_widget(self):

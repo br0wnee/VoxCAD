@@ -9,7 +9,6 @@ from ui import UI
 import moderngl_window as mglw
 from moderngl_window import WindowConfig
 
-
 from imgui_bundle import imgui
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
 
@@ -37,7 +36,6 @@ class VoxCAD(WindowConfig):
         self.ui = UI(self)
 
         self.delta_time = 0
-        self.time = 0
 
         self.keys_pressed = {}
         self.wnd.mouse_exclusivity = True
@@ -49,8 +47,6 @@ class VoxCAD(WindowConfig):
         self.shader_program.update()
         self.scene.update()
 
-        self.delta_time = self.timer._frames
-
     def on_render(self, time: float, frametime: float):
         self.ctx.enable(flags=mgl.DEPTH_TEST | mgl.CULL_FACE | mgl.BLEND)
         self.ctx.gc_mode = "auto"
@@ -60,6 +56,8 @@ class VoxCAD(WindowConfig):
         self.scene.render()
         self.ui.render()
         self.wnd.swap_buffers()
+
+        self.delta_time = frametime
 
     def on_key_event(self, key, action, modifiers):
         keys = self.wnd.keys
@@ -73,14 +71,16 @@ class VoxCAD(WindowConfig):
             if key == keys.C:
                 self.cursor = not self.cursor
                 self.wnd.mouse_exclusivity = not self.wnd.mouse_exclusivity
+
         self.imgui.key_event(key, action, modifiers)
         self.player.keyboard_control(key, action, modifiers)
         self.player.handle_tool_control(key, action, modifiers)
 
     def on_mouse_position_event(self, x, y, dx, dy):
-        self.imgui.mouse_position_event(x, y, dx, dy)
         if self.wnd.mouse_exclusivity:
             self.player.mouse_control(dx, dy)
+        else:
+            self.imgui.mouse_position_event(x, y, dx, dy)
 
     def on_mouse_press_event(self, x, y, button):
         self.imgui.mouse_press_event(x, y, button)

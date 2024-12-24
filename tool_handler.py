@@ -2,6 +2,7 @@ from settings import *
 from meshes.chunk_mesh_builder import get_chunk_index
 from world_objects.tool import Tool
 from movement_handler import MovementHandler
+from gcode_handler import GCodeHandler
 from numba import njit
 
 
@@ -20,7 +21,10 @@ class ToolHandler:
         self.world = world
         self.app = world.app
         self.tool = Tool()
+        self.gcode_handler = GCodeHandler()
         self.mv_handler = MovementHandler(self.tool)
+
+        self.affected_voxels = [0]
 
         self.init_tool()
 
@@ -52,6 +56,8 @@ class ToolHandler:
             self.tool_action(Operation.ADD)
             self.mvID += 1
             if self.mvID == len(self.movements):
+                for chunk in self.world.chunks:
+                    chunk.mesh.rebuild()
                 self.simulation_done = True
 
     def affected_chunks(self) -> np.ndarray:
@@ -89,11 +95,12 @@ class ToolHandler:
             voxels=self.world.voxels,
             tool_position=self.tool.position,
             tool_dimensions=self.tool.dimensions,
+            affected_voxels=self.affected_voxels,
             operation=int(operation),
         )
 
         for chunk in a_chunks:
-            self.world.chunks[chunk].build_mesh()
+            self.world.chunks[chunk].mesh.rebuild()
 
 
 @njit
@@ -103,6 +110,7 @@ def tool_to_chunks(
     tool_position,
     tool_dimensions,
     operation,
+    affected_voxels,
     CHUNK_SIZE=CHUNK_SIZE,
 ):
 
@@ -113,8 +121,9 @@ def tool_to_chunks(
     end_y = start_y + tool_dimensions[1]
     end_z = start_z + tool_dimensions[2]
 
-    # Calculate the radius of the cylinder (radius = tool_dimensions[0] / 2)
     cylinder_radius = tool_dimensions[0] / 2
+
+    affected_voxels[0] = 0
 
     for chunkID in affected_chunks:
         chunk = voxels[chunkID]
@@ -127,7 +136,6 @@ def tool_to_chunks(
         chunk_end_y = chunk_start_y + CHUNK_SIZE
         chunk_end_z = chunk_start_z + CHUNK_SIZE
 
-        # Calculate overlapping region
         overlap_start_x = max(start_x, chunk_start_x)
         overlap_end_x = min(end_x, chunk_end_x)
         overlap_start_y = max(start_y, chunk_start_y)
@@ -140,28 +148,26 @@ def tool_to_chunks(
             and overlap_start_y < overlap_end_y
             and overlap_start_z < overlap_end_z
         ):
-            # Modify voxels inside the cylindrical shape
             for x in range(overlap_start_x, overlap_end_x):
                 for y in range(overlap_start_y, overlap_end_y):
                     for z in range(overlap_start_z, overlap_end_z):
-                        # Check if (x, z) are inside the cylindrical radius
+
                         dx = x - tool_position[0]
                         dz = z - tool_position[2]
                         distance = math.sqrt(dx**2 + dz**2)
 
-                        # If the point is inside the cylindrical radius and within the height
                         if distance <= cylinder_radius:
-                            # Local chunk coordinates
                             chunk_local_x = x - chunk_start_x
                             chunk_local_y = y - chunk_start_y
                             chunk_local_z = z - chunk_start_z
 
-                            # Modify voxel data
                             chunk_index = (
                                 chunk_local_x
                                 + CHUNK_SIZE * chunk_local_z
                                 + CHUNK_AREA * chunk_local_y
                             )
+                            if chunk[chunk_index] == 1:
+                                affected_voxels[0] += 1
                             if operation == 1:
                                 chunk[chunk_index] = 3
                             elif operation == 0:

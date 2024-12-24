@@ -3,12 +3,11 @@ import re
 
 
 class GCodeHandler:
-    def __init__(self, gcode_file):
-        self.gcode_file = gcode_file
+    def __init__(self):
         self.commands = []
 
-    def parse(self):
-        with open(self.gcode_file, "r") as file:
+    def parse(self, gcode_file):
+        with open(gcode_file, "r") as file:
             for line in file:
                 line = line.strip()
                 if not line or line.startswith(";"):  # Ignore empty or comment lines
@@ -39,8 +38,8 @@ class GCodeHandler:
 
 
 # Usage:
-gcode_parser = GCodeHandler("test.gcode")
-gcode_parser.parse()
+gcode_parser = GCodeHandler()
+gcode_parser.parse("test.gcode")
 
 for command in gcode_parser.get_commands():
     print(command)

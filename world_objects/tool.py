@@ -13,6 +13,9 @@ class Tool:
             [CENTER_XZ, WORLD_H * CHUNK_SIZE - TOOL_H, CENTER_XZ], dtype="int32"
         )
 
+        # mm/min
+        self.feedrate = 200
+
     def move_tool(self, movement: np.ndarray(3, dtype="int32")):
 
         self.position += movement

@@ -11,9 +11,10 @@ class World:
         self.voxels = np.empty([WORLD_VOL, CHUNK_VOL], dtype=np.uint8)
 
         self.build_workpiece_chunks()
-        self.tool_handler = ToolHandler(self)
 
         self.build_chunk_mesh()
+
+        self.tool_handler = ToolHandler(self)
 
     def build_workpiece_chunks(self):
         for x in range(WORLD_W):
